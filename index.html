@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Liquidaciones - Grupo Athena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .step-card:hover { transform: translateY(-2px); transition: all 0.2s ease; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Sidebar de Navegación -->
+    <aside class="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col h-full z-10 shadow-lg">
+        <div class="p-6 border-b border-slate-100 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                A
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-800">Grupo Athena</h1>
+                <p class="text-xs text-slate-500 uppercase tracking-wider">Manual de Liquidaciones</p>
+            </div>
+        </div>
+
+        <!-- Buscador -->
+        <div class="p-4">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="Buscar compañía..." 
+                    class="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+            </div>
+        </div>
+
+        <!-- Lista de Compañías -->
+        <nav class="flex-1 overflow-y-auto px-2 pb-4 space-y-1" id="companyList">
+            <!-- Se llena con JS -->
+        </nav>
+
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+            <a href="https://e-menu.sunat.gob.pe/cl-ti-itmenu/AutenticaMenuInternet.htm" target="_blank" 
+               class="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition">
+                <i class="fas fa-external-link-alt"></i> Ir a Portal SUNAT
+            </a>
+        </div>
+    </aside>
+
+    <!-- Área de Contenido Principal -->
+    <main class="flex-1 flex flex-col h-full relative">
+        <!-- Header Móvil -->
+        <div class="md:hidden bg-white p-4 shadow flex justify-between items-center">
+            <span class="font-bold">Seleccionar Compañía</span>
+            <button onclick="document.querySelector('aside').classList.toggle('hidden')" class="text-slate-600">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Contenedor Dinámico -->
+        <div id="contentArea" class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+            <!-- El contenido se inyecta aquí -->
+            <div class="h-full flex flex-col items-center justify-center text-center text-slate-400">
+                <i class="fas fa-file-invoice-dollar text-6xl mb-4 text-slate-200"></i>
+                <h2 class="text-xl font-semibold text-slate-600">Selecciona una compañía de seguros</h2>
+                <p class="text-sm mt-2">Usa el menú de la izquierda para ver el paso a paso.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Templates de JS -->
+    <script>
+        // Base de datos de los procedimientos extraída del PDF
+        const procedures = [
+            {
+                id: 'pacifico',
+                name: 'Pacífico Seguros',
+                color: 'bg-blue-500',
+                url: 'https://somoscorredores.pacifico.com.pe/',
+                type: 'web',
+                steps: [
+                    { title: 'Ingreso al Portal', desc: 'Ingresa a Somos Corredores con tu usuario y clave.', imgPlaceholder: 'Login Pacífico' },
+                    { title: 'Navegación', desc: 'Ve a la opción <strong>MI PORTAFOLIO</strong> y selecciona "Somos Corredores".', imgPlaceholder: 'Menú Portafolio' },
+                    { title: 'Sección Comisiones', desc: 'Ingresa a la opción <strong>COMISIONES</strong>. Revisa las pestañas Seguros Generales, Vida y EPS (S/. y $).', imgPlaceholder: 'Pestaña Comisiones' },
+                    { title: 'Visualizar', desc: 'Selecciona la opción <strong>VER PRE-LIQUIDACIÓN</strong>.', imgPlaceholder: 'Botón Ver Pre-liquidación' },
+                    { title: 'Descarga', desc: 'Haz clic en los números en <strong>AZUL</strong> (N° Pre-liquidación) para descargar el PDF.', imgPlaceholder: 'Link de descarga azul' },
+                    { title: 'Facturación', desc: 'Con el PDF descargado, dirígete al portal de SUNAT para generar la factura.', isSunat: true }
+                ]
+            },
+            {
+                id: 'mapfre',
+                name: 'Mapfre',
+                color: 'bg-red-600',
+                url: 'https://mydream.mapfre.com.pe/login',
+                type: 'web',
+                steps: [
+                    { title: 'Acceso MyDream', desc: 'Ingresa usuario y contraseña. Acepta las políticas de uso.', imgPlaceholder: 'Login Mapfre' },
+                    { title: 'Consultas', desc: 'Selecciona la opción <strong>CONSULTAS DE GESTIÓN</strong>.', imgPlaceholder: 'Icono Consultas' },
+                    { title: 'Comisiones', desc: 'Selecciona <strong>COMISIONES</strong> y luego la sub-opción <strong>GANADAS</strong>.', imgPlaceholder: 'Menú Comisiones' },
+                    { title: 'Filtrar', desc: '1. En Estados selecciona "LIQUIDACIONES PENDIENTES". <br>2. Clic en "APLICAR FILTROS".', imgPlaceholder: 'Filtros de búsqueda' },
+                    { title: 'Descarga', desc: 'Selecciona el ícono de descarga para obtener la preliquidación.', imgPlaceholder: 'Icono Descargar' },
+                    { title: 'Facturación', desc: 'Dirígete al portal de SUNAT.', isSunat: true }
+                ]
+            },
+            {
+                id: 'lapositiva',
+                name: 'La Positiva',
+                color: 'bg-orange-500',
+                url: 'http://srvjavapp.lapositiva.com.pe:7780/workflow/',
+                note: 'Usar Internet Explorer o Edge en modo compatibilidad preferiblemente.',
+                type: 'web',
+                steps: [
+                    { title: 'Login', desc: 'Ingresa usuario y contraseña en la Oficina Virtual.', imgPlaceholder: 'Login La Positiva' },
+                    { title: 'Menú', desc: 'Dirige el cursor a <strong>ESTADOS DE CUENTA</strong> > Consulta de comisiones > <strong>Liquidar comisiones</strong>.', imgPlaceholder: 'Menú desplegable' },
+                    { title: 'Generación', desc: 'Selecciona Compañía (Generales/Vida/EPS) y Moneda. Clic en "Buscar" y luego en <strong>Generar Boleta</strong>.', imgPlaceholder: 'Botones de generación' },
+                    { title: 'Exportar', desc: 'Clic en "Exportar a PDF".', imgPlaceholder: 'Botón PDF' },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT.', isSunat: true }
+                ]
+            },
+            {
+                id: 'rimac',
+                name: 'Rimac Seguros',
+                color: 'bg-red-500',
+                url: 'http://www.rel.rimac.com.pe/AAAWWeb/logueo_aplicaciones.jsp',
+                type: 'web',
+                steps: [
+                    { title: 'Acceso', desc: 'Ingresa usuario, clave y código de seguridad.', imgPlaceholder: 'Login Rimac' },
+                    { title: 'Cartera', desc: 'Ingresa por la opción <strong>CONSULTA DE CARTERA</strong>.', imgPlaceholder: 'Menú Principal' },
+                    { title: 'Pestaña Comisiones', desc: 'Ve a la pestaña <strong>COMISIONES</strong>. Desglosa el panel y selecciona "Comisiones y Preliquidaciones".', imgPlaceholder: 'Pestaña superior' },
+                    { title: 'Búsqueda', desc: 'Selecciona Rimac Seguros o EPS y clic en <strong>BUSCAR</strong>.', imgPlaceholder: 'Filtros Rimac' },
+                    { title: 'Impresión', desc: 'Selecciona "PRELIQUIDAR". Luego ve a "Consulta Preliquidaciones", marca la casilla y dale a <strong>IMPRIMIR</strong>.', imgPlaceholder: 'Tabla de resultados' },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT.', isSunat: true }
+                ]
+            },
+            {
+                id: 'sanitas',
+                name: 'Sanitas',
+                color: 'bg-blue-400',
+                url: 'http://broker.sanitasperu.com/',
+                type: 'web',
+                steps: [
+                    { title: 'Plataforma', desc: 'Ingresa al portal de brokers Sanitas.', imgPlaceholder: 'Portal Sanitas' },
+                    { title: 'Navegación', desc: 'Ingresa a la pestaña <strong>BROKERS</strong> y selecciona <strong>DOCUMENTOS</strong>.', imgPlaceholder: 'Menú Brokers' },
+                    { title: 'Filtros', desc: 'Fecha: Desde 01/01/2019. Empresa: Sanitas. Estado pago: ABONADA. Estado liquidación: PENDIENTE. Clic en <strong>FILTRAR</strong>.', imgPlaceholder: 'Formulario de filtros' },
+                    { title: 'Liquidar', desc: 'Marca el CHECK para seleccionar todos los documentos y clic en <strong>LIQUIDAR</strong>. Confirma en "Aceptar".', imgPlaceholder: 'Botón Liquidar' },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT.', isSunat: true }
+                ]
+            },
+            {
+                id: 'protecta',
+                name: 'Protecta Security',
+                color: 'bg-yellow-500',
+                url: 'https://plataformadigital.protectasecurity.pe/ecommerce/broker/login',
+                type: 'web',
+                steps: [
+                    { title: 'Acceso', desc: 'Ingresa usuario y contraseña.', imgPlaceholder: 'Login Protecta' },
+                    { title: 'Lotes', desc: 'Selecciona <strong>Lote de Comisiones</strong> en el menú lateral.', imgPlaceholder: 'Menú lateral' },
+                    { title: 'Agregar', desc: 'Clic en <strong>+ AGREGAR LOTE</strong>. Verifica el Ramo y Producto (ej. SOAT).', imgPlaceholder: 'Botón Agregar' },
+                    { title: 'Incluir', desc: 'Clic en BUSCAR. Marca el cuadrado al costado de # y clic en <strong>INCLUIR</strong>.', imgPlaceholder: 'Tabla de selección' },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT.', isSunat: true }
+                ]
+            },
+            {
+                id: 'crecer',
+                name: 'Crecer Seguros',
+                color: 'bg-green-500',
+                url: 'http://broker.sanitasperu.com/',
+                note: 'Usa la plataforma compartida con Sanitas/Protecta.',
+                type: 'web',
+                steps: [
+                    { title: 'Acceso', desc: 'Ingresa a la opción de Crecer Seguros en el portal compartido.', imgPlaceholder: 'Portal Multimarca' },
+                    { title: 'Documentos', desc: 'Pestaña BROKERS > DOCUMENTOS.', imgPlaceholder: 'Menú' },
+                    { title: 'Filtros', desc: 'Empresa: CRECER SEGUROS. Estado pago: ABONADA. Estado Liquidación: PENDIENTE.', imgPlaceholder: 'Filtros Crecer' },
+                    { title: 'Liquidar', desc: 'Selecciona los documentos y clic en <strong>LIQUIDAR</strong>.', imgPlaceholder: 'Botón acción' },
+                    { title: 'Envío', desc: 'Enviar factura física a Av. Jorge Basadre 310 o electrónica a <em>facturacion@crecerseguros.pe</em>.', isInfo: true },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT.', isSunat: true }
+                ]
+            },
+            {
+                id: 'qualitas',
+                name: 'Quálitas',
+                color: 'bg-purple-600',
+                url: 'https://agentes360.qualitasperu.com.pe/web/guest/home',
+                type: 'web',
+                steps: [
+                    { title: 'Acceso Q360', desc: 'Ingresa Clave de corredor, cuenta y contraseña.', imgPlaceholder: 'Login Quálitas' },
+                    { title: 'Escritorio', desc: 'Ingresa por la opción <strong>ESCRITORIO 360</strong>.', imgPlaceholder: 'Dashboard' },
+                    { title: 'Comisiones', desc: 'Ubica el casillero <strong>COMISIONES</strong>. Verás las pendientes y facturadas.', imgPlaceholder: 'Widget Comisiones' },
+                    { title: 'PDF', desc: 'Haz clic al icono de <strong>PDF</strong> para descargar el estado de cuenta.', imgPlaceholder: 'Icono PDF' },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT.', isSunat: true }
+                ]
+            },
+            {
+                id: 'liberty',
+                name: 'Liberty Seguros',
+                color: 'bg-blue-800',
+                url: null,
+                type: 'email',
+                steps: [
+                    { title: 'Sin Portal', desc: 'Esta compañía no tiene portal web para comisiones.', isInfo: true },
+                    { title: 'Solicitud', desc: 'Enviar correo a: <br><a href="mailto:Karen.Torres@libertymutual.com" class="text-blue-600 underline">Karen.Torres@libertymutual.com</a><br><a href="mailto:cobranzas@libertymutual.com" class="text-blue-600 underline">cobranzas@libertymutual.com</a>', imgPlaceholder: 'Correo electrónico' },
+                    { title: 'Asunto', desc: 'Asunto obligatorio: <strong>REPORTE DE COMISIONES / (MES ACTUAL) / NOMBRE CORREDOR</strong>', isInfo: true },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT tras recibir el reporte.', isSunat: true }
+                ]
+            },
+            {
+                id: 'chubb',
+                name: 'CHUBB',
+                color: 'bg-teal-600',
+                url: null,
+                type: 'email',
+                steps: [
+                    { title: 'Sin Portal', desc: 'Esta compañía no tiene portal web para comisiones.', isInfo: true },
+                    { title: 'Solicitud', desc: 'Enviar correo a: <br><a href="mailto:comisiones.peru@chubb.com" class="text-blue-600 underline">comisiones.peru@chubb.com</a>', imgPlaceholder: 'Correo electrónico' },
+                    { title: 'Asunto', desc: 'Asunto: <strong>REPORTE DE COMISIONES PENDIENTES - BROKER - NOMBRE - RUC - AÑO</strong>', isInfo: true },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT tras recibir el reporte.', isSunat: true }
+                ]
+            },
+            {
+                id: 'ohio',
+                name: 'Ohio National',
+                color: 'bg-indigo-600',
+                url: null,
+                type: 'email',
+                steps: [
+                    { title: 'Sin Portal', desc: 'Esta compañía no tiene portal web público para esto.', isInfo: true },
+                    { title: 'Solicitud', desc: 'Enviar correo a: <br>kvargas@ohionational.pe<br>fcabanillas@ohionational.pe', imgPlaceholder: 'Correo electrónico' },
+                    { title: 'Asunto', desc: 'Asunto: <strong>REPORTE DE COMISIONES - (MES ACTUAL) - NOMBRE CORREDOR</strong>', isInfo: true },
+                    { title: 'Facturación', desc: 'Proceder a SUNAT tras recibir el reporte.', isSunat: true }
+                ]
+            }
+        ];
+
+        // Elementos DOM
+        const companyListEl = document.getElementById('companyList');
+        const contentAreaEl = document.getElementById('contentArea');
+        const searchInput = document.getElementById('searchInput');
+
+        // Renderizar menú
+        function renderMenu(filterText = '') {
+            companyListEl.innerHTML = '';
+            procedures.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase())).forEach(proc => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-slate-100 transition group focus:bg-blue-50 focus:ring-1 focus:ring-blue-200`;
+                btn.onclick = () => loadContent(proc.id);
+                btn.innerHTML = `
+                    <div class="w-8 h-8 rounded-full ${proc.color} text-white flex items-center justify-center text-xs font-bold shadow-sm group-hover:scale-110 transition">
+                        ${proc.name.substring(0,2).toUpperCase()}
+                    </div>
+                    <span class="text-sm font-medium text-slate-700 group-hover:text-slate-900">${proc.name}</span>
+                    ${proc.type === 'email' ? '<i class="fas fa-envelope text-xs text-slate-400 ml-auto"></i>' : ''}
+                `;
+                companyListEl.appendChild(btn);
+            });
+        }
+
+        // Cargar contenido
+        function loadContent(id) {
+            const data = procedures.find(p => p.id === id);
+            if (!data) return;
+
+            // Highlight menu item logic (simplified)
+            // ...
+
+            let stepsHtml = '';
+            
+            data.steps.forEach((step, index) => {
+                let visualContent = '';
+                
+                if (step.isSunat) {
+                    visualContent = `
+                        <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-4">
+                            <div class="bg-blue-100 p-3 rounded-full text-blue-600">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-blue-900 text-sm">Portal SUNAT</h4>
+                                <p class="text-xs text-blue-700 mb-2">Generar factura con los datos obtenidos.</p>
+                                <a href="https://e-menu.sunat.gob.pe/cl-ti-itmenu/AutenticaMenuInternet.htm" target="_blank" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Ir a SUNAT</a>
+                            </div>
+                        </div>
+                    `;
+                } else if (step.isInfo) {
+                    visualContent = `<div class="mt-2 text-sm text-slate-500 italic border-l-4 border-slate-300 pl-3">${step.desc}</div>`;
+                } else {
+                    // Placeholder de Imagen
+                    visualContent = `
+                        <div class="mt-4 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50 h-32 flex flex-col items-center justify-center text-slate-400 group-hover:border-blue-200 transition relative overflow-hidden">
+                            <i class="fas fa-image text-2xl mb-1"></i>
+                            <span class="text-xs font-medium">Captura: ${step.imgPlaceholder}</span>
+                            <div class="absolute inset-0 bg-slate-100 opacity-0 group-hover:opacity-10 transition flex items-center justify-center"></div>
+                            <!-- Para usar imágenes reales, reemplaza este DIV con: <img src="ruta/imagen.jpg" class="w-full h-full object-contain"> -->
+                        </div>
+                    `;
+                }
+
+                stepsHtml += `
+                    <div class="step-card bg-white p-6 rounded-xl shadow-sm border border-slate-100 relative ${step.isSunat ? 'border-blue-200' : ''}">
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full ${data.color} text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                                ${index + 1}
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-slate-800 text-lg">${step.title}</h3>
+                                ${!step.isInfo ? `<p class="text-slate-600 text-sm mt-1 leading-relaxed">${step.desc}</p>` : ''}
+                                ${visualContent}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            contentAreaEl.innerHTML = `
+                <div class="max-w-3xl mx-auto pb-10 fade-in">
+                    <header class="mb-8 border-b border-slate-200 pb-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-2xl ${data.color} shadow-lg flex items-center justify-center text-white text-2xl font-bold">
+                                    ${data.name.substring(0,1)}
+                                </div>
+                                <div>
+                                    <h2 class="text-3xl font-bold text-slate-800">${data.name}</h2>
+                                    <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${data.type === 'web' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} mt-1">
+                                        <i class="fas ${data.type === 'web' ? 'fa-globe' : 'fa-envelope'}"></i>
+                                        ${data.type === 'web' ? 'Portal Web' : 'Solicitud por Correo'}
+                                    </span>
+                                </div>
+                            </div>
+                            ${data.url ? `<a href="${data.url}" target="_blank" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition shadow flex items-center gap-2"><i class="fas fa-external-link-alt"></i> Abrir Portal</a>` : ''}
+                        </div>
+                        ${data.note ? `<div class="mt-4 p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg border border-yellow-200"><i class="fas fa-exclamation-circle mr-2"></i>${data.note}</div>` : ''}
+                    </header>
+                    
+                    <div class="space-y-6">
+                        ${stepsHtml}
+                    </div>
+                    
+                    <footer class="mt-12 text-center text-slate-400 text-xs border-t border-slate-100 pt-6">
+                        <p>Basado en el manual interno v1 • Actualizado 2023-2024</p>
+                    </footer>
+                </div>
+            `;
+        }
+
+        // Búsqueda
+        searchInput.addEventListener('input', (e) => renderMenu(e.target.value));
+
+        // Init
+        renderMenu();
+        // Cargar el primero por defecto en Desktop
+        if(window.innerWidth > 768) loadContent('pacifico');
+
+    </script>
+</body>
+</html>
